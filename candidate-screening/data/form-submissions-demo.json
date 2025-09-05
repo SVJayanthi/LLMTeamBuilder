@@ -1,0 +1,325 @@
+[
+  {
+    "id": "1",
+    "name": "Clever Monkey",
+    "email": "clever-monkey@example.com",
+    "phone": "5582981474204",
+    "location": "Maceió",
+    "submitted_at": "2025-01-28 09:02:16.000000",
+    "work_availability": [
+      "full-time",
+      "part-time"
+    ],
+    "annual_salary_expectation": {
+      "full-time": "$117548"
+    },
+    "work_experiences": [
+      {
+        "company": "StarLab Digital Ventures",
+        "roleName": "Full Stack Developer"
+      },
+      {
+        "company": "OrbitalLife",
+        "roleName": "Project Manager"
+      },
+      {
+        "company": "Carrot Hosting",
+        "roleName": "Full Stack Developer"
+      },
+      {
+        "company": "Bitbay Solutions",
+        "roleName": "Full Stack Developer"
+      },
+      {
+        "company": "Federal Institute of Science, Education & Technology - Alagoas",
+        "roleName": "Project Manager"
+      },
+      {
+        "company": "Usina Caeté",
+        "roleName": "Scientist"
+      },
+      {
+        "company": "Cyberia",
+        "roleName": "System Administrator"
+      }
+    ],
+    "education": {
+      "highest_level": "Bachelor's Degree",
+      "degrees": [
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Computer Science",
+          "school": "International Institutions",
+          "gpa": "GPA 3.0-3.4",
+          "startDate": "2023",
+          "endDate": "2027",
+          "originalSchool": "Faculdade Descomplica",
+          "isTop50": false
+        },
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Law",
+          "school": "International Institutions",
+          "gpa": "GPA 3.0-3.4",
+          "startDate": "2015",
+          "endDate": "2023",
+          "originalSchool": "Federal University of Alagoas",
+          "isTop50": false
+        },
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Chemistry",
+          "school": "International Institutions",
+          "gpa": "GPA 3.0-3.4",
+          "startDate": "2011",
+          "endDate": "2014",
+          "originalSchool": "Federal Institute of Alagoas",
+          "isTop50": false
+        }
+      ]
+    },
+    "skills": [
+      "Data Analysis",
+      "Docker",
+      "Microservices"
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Sarah Johnson",
+    "email": "sarah.j@techcorp.com",
+    "phone": "4155551234",
+    "location": "San Francisco",
+    "submitted_at": "2025-01-27 14:30:00.000000",
+    "work_availability": [
+      "full-time"
+    ],
+    "annual_salary_expectation": {
+      "full-time": "$145000"
+    },
+    "work_experiences": [
+      {
+        "company": "Google",
+        "roleName": "Senior Software Engineer"
+      },
+      {
+        "company": "Meta",
+        "roleName": "Software Engineer"
+      },
+      {
+        "company": "Startup Inc",
+        "roleName": "Junior Developer"
+      }
+    ],
+    "education": {
+      "highest_level": "Master's Degree",
+      "degrees": [
+        {
+          "degree": "Master's Degree",
+          "subject": "Computer Science",
+          "school": "Stanford University",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2018",
+          "endDate": "2020",
+          "originalSchool": "Stanford University",
+          "isTop50": true
+        },
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Computer Science",
+          "school": "UC Berkeley",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2014",
+          "endDate": "2018",
+          "originalSchool": "UC Berkeley",
+          "isTop50": true
+        }
+      ]
+    },
+    "skills": [
+      "React",
+      "Node.js",
+      "Python",
+      "Machine Learning",
+      "Kubernetes"
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Michael Chen",
+    "email": "m.chen@fintech.io",
+    "phone": "2125559876",
+    "location": "New York",
+    "submitted_at": "2025-01-26 11:15:00.000000",
+    "work_availability": [
+      "full-time",
+      "contract"
+    ],
+    "annual_salary_expectation": {
+      "full-time": "$135000",
+      "contract": "$150/hour"
+    },
+    "work_experiences": [
+      {
+        "company": "JP Morgan Chase",
+        "roleName": "Tech Lead"
+      },
+      {
+        "company": "Goldman Sachs",
+        "roleName": "Senior Developer"
+      },
+      {
+        "company": "FinTech Startup",
+        "roleName": "Backend Engineer"
+      }
+    ],
+    "education": {
+      "highest_level": "Bachelor's Degree",
+      "degrees": [
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Computer Engineering",
+          "school": "MIT",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2012",
+          "endDate": "2016",
+          "originalSchool": "MIT",
+          "isTop50": true
+        }
+      ]
+    },
+    "skills": [
+      "Java",
+      "Spring Boot",
+      "AWS",
+      "Microservices",
+      "SQL"
+    ]
+  },
+  {
+    "id": "4",
+    "name": "Emily Rodriguez",
+    "email": "emily.r@datatech.com",
+    "phone": "3105557890",
+    "location": "Los Angeles",
+    "submitted_at": "2025-01-25 16:45:00.000000",
+    "work_availability": [
+      "full-time",
+      "part-time"
+    ],
+    "annual_salary_expectation": {
+      "full-time": "$125000",
+      "part-time": "$65000"
+    },
+    "work_experiences": [
+      {
+        "company": "Netflix",
+        "roleName": "Data Engineer"
+      },
+      {
+        "company": "Spotify",
+        "roleName": "Backend Developer"
+      },
+      {
+        "company": "Local Agency",
+        "roleName": "Web Developer"
+      }
+    ],
+    "education": {
+      "highest_level": "Bachelor's Degree",
+      "degrees": [
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Information Systems",
+          "school": "UCLA",
+          "gpa": "GPA 3.0-3.4",
+          "startDate": "2015",
+          "endDate": "2019",
+          "originalSchool": "UCLA",
+          "isTop50": true
+        }
+      ]
+    },
+    "skills": [
+      "Python",
+      "Apache Spark",
+      "Data Pipeline",
+      "PostgreSQL",
+      "Redis"
+    ]
+  },
+  {
+    "id": "5",
+    "name": "David Kim",
+    "email": "d.kim@aicompany.ai",
+    "phone": "4085553456",
+    "location": "Seattle",
+    "submitted_at": "2025-01-24 13:20:00.000000",
+    "work_availability": [
+      "full-time"
+    ],
+    "annual_salary_expectation": {
+      "full-time": "$160000"
+    },
+    "work_experiences": [
+      {
+        "company": "Amazon",
+        "roleName": "Principal Engineer"
+      },
+      {
+        "company": "Microsoft",
+        "roleName": "Senior Software Engineer"
+      },
+      {
+        "company": "Oracle",
+        "roleName": "Software Engineer"
+      },
+      {
+        "company": "IBM",
+        "roleName": "Junior Developer"
+      }
+    ],
+    "education": {
+      "highest_level": "PhD",
+      "degrees": [
+        {
+          "degree": "PhD",
+          "subject": "Artificial Intelligence",
+          "school": "Carnegie Mellon University",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2016",
+          "endDate": "2021",
+          "originalSchool": "Carnegie Mellon University",
+          "isTop50": true
+        },
+        {
+          "degree": "Master's Degree",
+          "subject": "Computer Science",
+          "school": "University of Washington",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2014",
+          "endDate": "2016",
+          "originalSchool": "University of Washington",
+          "isTop50": true
+        },
+        {
+          "degree": "Bachelor's Degree",
+          "subject": "Computer Science",
+          "school": "University of Washington",
+          "gpa": "GPA 3.5-4.0",
+          "startDate": "2010",
+          "endDate": "2014",
+          "originalSchool": "University of Washington",
+          "isTop50": true
+        }
+      ]
+    },
+    "skills": [
+      "Machine Learning",
+      "Deep Learning",
+      "TensorFlow",
+      "PyTorch",
+      "Distributed Systems"
+    ]
+  }
+]

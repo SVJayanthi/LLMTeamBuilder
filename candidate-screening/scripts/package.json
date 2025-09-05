@@ -1,0 +1,18 @@
+{
+  "name": "llm-optimization-scripts",
+  "version": "1.0.0",
+  "description": "Scripts to test LLM optimization strategies for candidate evaluation",
+  "main": "index.js",
+  "scripts": {
+    "script1": "node script1-prompt-redesign.js",
+    "script2": "node script2-batching.js",
+    "script3": "node script3-concurrency.js",
+    "test": "npm run script1 && npm run script2 && npm run script3"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
