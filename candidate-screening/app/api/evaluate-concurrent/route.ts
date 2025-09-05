@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { evaluateProfileWithAllRubricItems } from '@/lib/openai';
+import { evaluateProfileBatch } from '@/lib/openai';
 import { Profile, Rubric, EvaluationResult } from '@/types';
 
 // Rate limiter to control concurrency
@@ -48,10 +48,11 @@ class RateLimiter {
 
 export async function POST(request: NextRequest) {
   try {
-    const { profiles, rubric, maxConcurrent = 50 }: { 
+    const { profiles, rubric, maxConcurrent = 200, batchSize = 5 }: { 
       profiles: Profile[]; 
       rubric: Rubric; 
       maxConcurrent?: number; 
+      batchSize?: number;
     } = await request.json();
     
     if (!profiles || profiles.length === 0) {
@@ -61,55 +62,200 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log(`Starting concurrent evaluation of ${profiles.length} profiles with max concurrent: ${maxConcurrent}`);
+    console.log(`Starting concurrent evaluation of ${profiles.length} profiles with max concurrent: ${maxConcurrent}, batch size: ${batchSize}`);
     
+    // Check if client requested streaming progress (NDJSON)
+    const url = new URL(request.url);
+    const wantsStream = url.searchParams.get('stream') === '1' ||
+      (request.headers.get('accept') || '').includes('application/x-ndjson');
+
     // OPTIMIZATION 3: Use concurrency with rate limiting
     const rateLimiter = new RateLimiter(maxConcurrent, 50);
     const startTime = Date.now();
-    
-    // Create evaluation tasks for all profiles
-    const evaluationTasks = profiles.map((profile, index) => {
-      return rateLimiter.execute(async () => {
-        console.log(`Starting evaluation for profile ${index + 1}/${profiles.length}: ${profile.name}`);
-        const profileStartTime = Date.now();
-        
-        const evaluation = await evaluateProfileWithAllRubricItems(profile, rubric);
-        
-        const profileEndTime = Date.now();
-        const evaluationTime = profileEndTime - profileStartTime;
-        
-        // Transform to match EvaluationResult format
-        const scores = rubric.items.map((item) => ({
-          itemId: item.id,
-          score: evaluation[item.id].score,
-          explanation: evaluation[item.id].explanation,
-        }));
-        
-        const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
-        const averageScore = totalScore / scores.length;
-        
-        console.log(`Completed profile ${index + 1}: ${profile.name} - Score: ${totalScore}/${rubric.items.length * 5} (avg: ${averageScore.toFixed(2)}) - Time: ${evaluationTime}ms`);
-        
-        const result: EvaluationResult = {
-          profileId: profile.id,
-          rubricId: rubric.id,
-          scores,
-          totalScore,
-          averageScore,
-          evaluatedAt: new Date(),
-        };
-        
-        return {
-          ...result,
-          profileName: profile.name,
-          evaluationTime
-        };
+    const totalBatches = Math.ceil(profiles.length / batchSize);
+    console.log(`Batching ${profiles.length} profiles into ${totalBatches} batch(es) of up to ${batchSize} profiles each (maxConcurrent batches: ${maxConcurrent}).`);
+
+    if (wantsStream) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          (async () => {
+            try {
+              // Send start event
+              controller.enqueue(
+                encoder.encode(JSON.stringify({ type: 'start', total: profiles.length, maxConcurrent, batchSize }) + '\n')
+              );
+
+              let completed = 0;
+              const results: Array<{
+                profileId: string;
+                rubricId: string;
+                scores: EvaluationResult['scores'];
+                totalScore: number;
+                averageScore: number;
+                evaluatedAt: Date;
+                evaluationTime: number;
+              }> = [];
+
+              const tasks: Array<Promise<void>> = [];
+              for (let i = 0; i < profiles.length; i += batchSize) {
+                const startIdx = i;
+                const batch = profiles.slice(i, Math.min(i + batchSize, profiles.length));
+                tasks.push(
+                  rateLimiter.execute(async () => {
+                    const batchNumber = Math.floor(startIdx / batchSize) + 1;
+                    console.log(`Starting batch ${batchNumber}/${totalBatches} (stream): profiles ${startIdx + 1}-${startIdx + batch.length} (size ${batch.length})`);
+                    const batchStart = Date.now();
+                    const batchResults = await evaluateProfileBatch(batch, rubric);
+                    const batchEnd = Date.now();
+                    const batchTime = batchEnd - batchStart;
+                    console.log(`Completed batch ${batchNumber}/${totalBatches} (stream) in ${batchTime}ms`);
+
+                    for (let k = 0; k < batchResults.length; k++) {
+                      const br = batchResults[k];
+                      const globalIndex = startIdx + k;
+
+                      const scores = rubric.items.map((item) => ({
+                        itemId: item.id,
+                        score: br.evaluation[item.id]?.score ?? 3,
+                        explanation: br.evaluation[item.id]?.explanation ?? 'No explanation provided',
+                      }));
+                      const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
+                      const averageScore = totalScore / scores.length;
+
+                      const result: EvaluationResult = {
+                        profileId: br.profileId,
+                        rubricId: rubric.id,
+                        scores,
+                        totalScore,
+                        averageScore,
+                        evaluatedAt: new Date(),
+                      };
+
+                      results.push({
+                        profileId: result.profileId,
+                        rubricId: result.rubricId,
+                        scores: result.scores,
+                        totalScore: result.totalScore,
+                        averageScore: result.averageScore,
+                        evaluatedAt: result.evaluatedAt,
+                        evaluationTime: Math.max(1, Math.round(batchTime / Math.max(1, batchResults.length))),
+                      });
+
+                      completed += 1;
+                      controller.enqueue(
+                        encoder.encode(
+                          JSON.stringify({
+                            type: 'result',
+                            index: globalIndex,
+                            profileId: result.profileId,
+                            profileName: br.profileName,
+                            evaluationTime: Math.max(1, Math.round(batchTime / Math.max(1, batchResults.length))),
+                            completed,
+                            total: profiles.length,
+                            result,
+                          }) + '\n'
+                        )
+                      );
+                    }
+                  })
+                );
+              }
+
+              await Promise.all(tasks);
+
+              const endTime = Date.now();
+              const totalTime = endTime - startTime;
+              const totalSequentialTime = results.reduce((sum, r) => sum + r.evaluationTime, 0);
+              const actualSpeedup = totalSequentialTime / totalTime;
+
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({ type: 'done', totalTime, maxConcurrent, actualSpeedup }) + '\n'
+                )
+              );
+              controller.close();
+            } catch (err: any) {
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({ type: 'error', message: err?.message || 'Unknown error' }) + '\n'
+                )
+              );
+              controller.close();
+            }
+          })();
+        }
       });
-    });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'application/x-ndjson',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        }
+      });
+    }
+
+    // Fallback to JSON response (no streaming requested)
+    // Create batched evaluation tasks for all profiles
+    const batchTasks: Array<Promise<{
+      items: Array<{
+        profileId: string;
+        rubricId: string;
+        scores: EvaluationResult['scores'];
+        totalScore: number;
+        averageScore: number;
+        evaluatedAt: Date;
+        evaluationTime: number;
+      }>;
+      batchTime: number;
+    }>> = [];
+
+    for (let i = 0; i < profiles.length; i += batchSize) {
+      const startIdx = i;
+      const batch = profiles.slice(i, Math.min(i + batchSize, profiles.length));
+      batchTasks.push(
+        rateLimiter.execute(async () => {
+          const batchNumber = Math.floor(startIdx / batchSize) + 1;
+          console.log(`Starting batch ${batchNumber}/${totalBatches} (json): profiles ${startIdx + 1}-${startIdx + batch.length} (size ${batch.length})`);
+          const batchStart = Date.now();
+          const batchResults = await evaluateProfileBatch(batch, rubric);
+          const batchEnd = Date.now();
+          const batchTime = batchEnd - batchStart;
+          console.log(`Completed batch ${batchNumber}/${totalBatches} (json) in ${batchTime}ms`);
+
+          const items = batchResults.map((br) => {
+            const scores = rubric.items.map((item) => ({
+              itemId: item.id,
+              score: br.evaluation[item.id]?.score ?? 3,
+              explanation: br.evaluation[item.id]?.explanation ?? 'No explanation provided',
+            }));
+            const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
+            const averageScore = totalScore / scores.length;
+
+            const result: EvaluationResult = {
+              profileId: br.profileId,
+              rubricId: rubric.id,
+              scores,
+              totalScore,
+              averageScore,
+              evaluatedAt: new Date(),
+            };
+
+            return {
+              ...result,
+              evaluationTime: Math.max(1, Math.round(batchTime / Math.max(1, batchResults.length))),
+            };
+          });
+
+          return { items, batchTime };
+        })
+      );
+    }
     
-    // Execute all evaluations concurrently
-    console.log(`Executing concurrent evaluation of ${profiles.length} profiles...`);
-    const results = await Promise.all(evaluationTasks);
+    console.log(`Executing batched concurrent evaluation of ${profiles.length} profiles (batch size ${batchSize})...`);
+    const batchOutputs = await Promise.all(batchTasks);
+    const results = batchOutputs.flatMap(o => o.items);
     
     const endTime = Date.now();
     const totalTime = endTime - startTime;

@@ -40,10 +40,11 @@ export default function EvaluationRunner({ onComplete }: EvaluationRunnerProps) 
           console.log(`🚀 Starting concurrent evaluation of ${profiles.length} profiles for rubric: ${rubric.title}`);
           
           try {
-            const response = await fetch('/api/evaluate-concurrent', {
+            const response = await fetch('/api/evaluate-concurrent?stream=1', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/x-ndjson',
               },
               body: JSON.stringify({ 
                 profiles, 
@@ -55,16 +56,73 @@ export default function EvaluationRunner({ onComplete }: EvaluationRunnerProps) 
               throw new Error(`Concurrent evaluation failed: ${response.statusText}`);
             }
 
-            const result = await response.json();
-            console.log(`✅ Completed concurrent evaluation for rubric ${rubric.title}: ${result.results.length} profiles evaluated in ${(result.totalTime / 1000).toFixed(2)}s with ${result.actualSpeedup.toFixed(2)}x speedup`);
-            
-            // Add the results to rubricResults
-            rubricResults.push(...result.results);
-            
-            // Update progress to show all profiles completed for this rubric
-            updateProgress({
-              currentProfile: profiles.length,
-            });
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/x-ndjson')) {
+              const body = response.body;
+              if (!body) {
+                // Fallback to JSON if stream body is unexpectedly null
+                const result = await response.json();
+                rubricResults.push(...result.results);
+                updateProgress({ currentProfile: profiles.length });
+                console.log(`✅ Completed concurrent evaluation for rubric ${rubric.title}: ${result.results.length} profiles evaluated in ${(result.totalTime / 1000).toFixed(2)}s with ${result.actualSpeedup.toFixed(2)}x speedup`);
+                return;
+              }
+              const reader = body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
+              let doneMeta: { totalTime?: number; actualSpeedup?: number } | null = null;
+
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                  if (!line.trim()) continue;
+                  const evt = JSON.parse(line);
+                  if (evt.type === 'start') {
+                    updateProgress({ totalProfiles: evt.total });
+                  } else if (evt.type === 'result') {
+                    const r: EvaluationResult = {
+                      ...evt.result,
+                      evaluatedAt: new Date(evt.result.evaluatedAt),
+                    };
+                    rubricResults.push(r);
+                    updateProgress({ currentProfile: evt.completed });
+                  } else if (evt.type === 'done') {
+                    doneMeta = { totalTime: evt.totalTime, actualSpeedup: evt.actualSpeedup };
+                  } else if (evt.type === 'error') {
+                    throw new Error(evt.message || 'Stream error');
+                  }
+                }
+              }
+
+              // Process any remaining buffered line
+              if (buffer.trim()) {
+                try {
+                  const evt = JSON.parse(buffer);
+                  if (evt.type === 'done') {
+                    doneMeta = { totalTime: evt.totalTime, actualSpeedup: evt.actualSpeedup };
+                  }
+                } catch {}
+              }
+
+              // Ensure progress shows full completion
+              updateProgress({ currentProfile: profiles.length });
+
+              if (doneMeta) {
+                console.log(`✅ Completed concurrent evaluation for rubric ${rubric.title}: ${rubricResults.length} profiles evaluated in ${((doneMeta.totalTime || 0) / 1000).toFixed(2)}s with ${(doneMeta.actualSpeedup || 0).toFixed(2)}x speedup`);
+              } else {
+                console.log(`✅ Completed concurrent evaluation for rubric ${rubric.title}: ${rubricResults.length} profiles evaluated`);
+              }
+            } else {
+              // Fallback to JSON response
+              const result = await response.json();
+              rubricResults.push(...result.results);
+              updateProgress({ currentProfile: profiles.length });
+              console.log(`✅ Completed concurrent evaluation for rubric ${rubric.title}: ${result.results.length} profiles evaluated in ${(result.totalTime / 1000).toFixed(2)}s with ${result.actualSpeedup.toFixed(2)}x speedup`);
+            }
           } catch (error) {
             console.error(`Error in concurrent evaluation for rubric ${rubric.title}:`, error);
             // Fallback to individual evaluation if concurrent fails

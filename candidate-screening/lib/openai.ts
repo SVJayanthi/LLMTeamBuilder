@@ -136,7 +136,11 @@ Only return valid JSON, no other text.`;
       max_tokens: 1000,
     });
 
-    const content = response.choices[0]?.message?.content || '{}';
+    let content = response.choices[0]?.message?.content || '{}';
+    
+    // Strip markdown code blocks if present
+    content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    
     const result = JSON.parse(content);
     
     // Validate and normalize scores
@@ -215,7 +219,7 @@ Only return valid JSON, no other text.`;
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -226,11 +230,13 @@ Only return valid JSON, no other text.`;
           content: prompt
         }
       ],
-      temperature: 0.3,
-      max_tokens: 3000,
     });
 
-    const content = response.choices[0]?.message?.content || '{}';
+    let content = response.choices[0]?.message?.content || '{}';
+    
+    // Strip markdown code blocks if present
+    content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    
     const result = JSON.parse(content);
     
     // Normalize and validate results
