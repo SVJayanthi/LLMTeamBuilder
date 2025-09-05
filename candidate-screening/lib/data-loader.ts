@@ -10,14 +10,17 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-export function loadProfiles(limit: number = 50): Profile[] {
-  // Get all profiles and shuffle them
+export function loadProfiles(limit: number = 1000): Profile[] {
+  // Get the first X profiles in a deterministic order (no shuffling)
   const allProfiles = formSubmissions as any[];
-  const shuffledProfiles = shuffleArray(allProfiles);
-  
-  // Take the requested number and assign numerical IDs
-  return shuffledProfiles.slice(0, Math.min(limit, allProfiles.length)).map((profile, index) => ({
-    ...profile,
-    id: (index + 1).toString()
-  })) as Profile[];
+  const selectedProfiles = allProfiles.slice(0, Math.min(limit, allProfiles.length));
+
+  // Assign stable IDs based on profile content to avoid ID mismatches across requests
+  return selectedProfiles.map((profile) => {
+    const stableId = `${profile.name.replace(/\s+/g, '-').toLowerCase()}-${profile.email.split('@')[0]}`;
+    return {
+      ...profile,
+      id: stableId,
+    };
+  }) as Profile[];
 }

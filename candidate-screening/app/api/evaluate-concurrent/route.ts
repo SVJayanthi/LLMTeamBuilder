@@ -48,7 +48,7 @@ class RateLimiter {
 
 export async function POST(request: NextRequest) {
   try {
-    const { profiles, rubric, maxConcurrent = 5 }: { 
+    const { profiles, rubric, maxConcurrent = 50 }: { 
       profiles: Profile[]; 
       rubric: Rubric; 
       maxConcurrent?: number; 

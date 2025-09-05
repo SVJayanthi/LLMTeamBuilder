@@ -48,7 +48,6 @@ export default function EvaluationRunner({ onComplete }: EvaluationRunnerProps) 
               body: JSON.stringify({ 
                 profiles, 
                 rubric,
-                maxConcurrent: Math.min(5, profiles.length) // Optimize concurrency based on profile count
               }),
             });
 
